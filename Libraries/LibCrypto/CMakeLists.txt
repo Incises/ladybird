@@ -30,6 +30,7 @@ set(SOURCES
     PK/MLDSA.cpp
     PK/MLKEM.cpp
     PK/RSA.cpp
+    PK/SM2.cpp
 )
 
 ladybird_lib(LibCrypto crypto)
