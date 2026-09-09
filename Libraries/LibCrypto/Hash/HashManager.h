@@ -15,6 +15,7 @@
 #include <LibCrypto/Hash/SHA1.h>
 #include <LibCrypto/Hash/SHA2.h>
 #include <LibCrypto/Hash/SHA3.h>
+#include <LibCrypto/Hash/SM3.h>
 
 namespace Crypto::Hash {
 
@@ -29,7 +30,8 @@ enum class HashKind {
     SHA512,
     SHA3_256,
     SHA3_384,
-    SHA3_512
+    SHA3_512,
+    SM3
 };
 
 struct MultiHashDigestVariant {
@@ -170,6 +172,9 @@ public:
         case HashKind::SHA3_512:
             m_algorithm = SHA3_512::create();
             break;
+        case HashKind::SM3:
+            m_algorithm = SM3::create();
+            break;
         default:
         case HashKind::None:
             m_algorithm = Empty {};
@@ -254,7 +259,8 @@ private:
         NonnullOwnPtr<SHA512>,
         NonnullOwnPtr<SHA3_256>,
         NonnullOwnPtr<SHA3_384>,
-        NonnullOwnPtr<SHA3_512>>;
+        NonnullOwnPtr<SHA3_512>,
+        NonnullOwnPtr<SM3>>;
     AlgorithmVariant m_algorithm {};
     HashKind m_kind { HashKind::None };
     ByteBuffer m_pre_init_buffer;

@@ -24,6 +24,7 @@ set(SOURCES
     Hash/SHA1.cpp
     Hash/SHA2.cpp
     Hash/SHA3.cpp
+    Hash/SM3.cpp
     PK/EC.cpp
     PK/MLDSA.cpp
     PK/MLKEM.cpp
