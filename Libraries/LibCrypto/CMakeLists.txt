@@ -13,6 +13,7 @@ set(SOURCES
     Certificate/Certificate.cpp
     Cipher/AES.cpp
     Cipher/ChaCha.cpp
+    Cipher/SM4.cpp
     Curves/EdwardsCurve.cpp
     Curves/SECPxxxr1.cpp
     Hash/Argon2.cpp
