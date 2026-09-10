@@ -112,6 +112,8 @@ enum class HTTPDiskCacheMode {
 
 struct RequestServerOptions {
     Vector<ByteString> certificates;
+    Vector<ByteString> tlcp_endpoints;
+    bool log_transport_security { false };
     ByteString cache_path;
     HTTPDiskCacheMode http_disk_cache_mode { HTTPDiskCacheMode::Disabled };
     Optional<ByteString> resource_substitution_map_path;

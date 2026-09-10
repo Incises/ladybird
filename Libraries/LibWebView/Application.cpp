@@ -25,6 +25,7 @@
 #include <LibFileSystem/FileSystem.h>
 #include <LibIPC/TransportHandle.h>
 #include <LibImageDecoderClient/Client.h>
+#include <LibRequests/TLCPPolicy.h>
 #include <LibURL/InternalURLs.h>
 #include <LibURL/Parser.h>
 #include <LibWeb/CSS/PropertyID.h>
@@ -304,6 +305,8 @@ ErrorOr<void> Application::initialize(Main::Arguments const& arguments)
 
     Vector<ByteString> raw_urls;
     Vector<ByteString> certificates;
+    Vector<ByteString> tlcp_endpoints;
+    bool log_transport_security = false;
     Optional<HeadlessMode> headless_mode;
     Optional<int> window_width;
     Optional<int> window_height;
@@ -378,6 +381,8 @@ ErrorOr<void> Application::initialize(Main::Arguments const& arguments)
     args_parser.add_option(screenshot_path, "Save screenshots to the given location (only supported for headless screenshot mode)", "screenshot-path", 0, "path");
     args_parser.add_option(window_width, "Set viewport width in pixels (default: 800) (currently only supported for headless mode)", "window-width", 0, "pixels");
     args_parser.add_option(window_height, "Set viewport height in pixels (default: 600) (currently only supported for headless mode)", "window-height", 0, "pixels");
+    args_parser.add_option(tlcp_endpoints, "Require TLCP for host[:port] (repeatable; default port 443)", "tlcp-endpoint", 0, "endpoint");
+    args_parser.add_option(log_transport_security, "Log negotiated transport security", "log-transport-security");
     args_parser.add_option(certificates, "Path to a certificate file", "certificate", 'C', "certificate");
     args_parser.add_option(new_window, "Force opening in a new window", "new-window", 'n');
 #if !defined(AK_OS_ANDROID)
@@ -485,6 +490,13 @@ ErrorOr<void> Application::initialize(Main::Arguments const& arguments)
 
     create_platform_arguments(args_parser);
     args_parser.parse(m_arguments);
+
+    Requests::TLCPPolicy tlcp_policy;
+    for (auto const& endpoint : tlcp_endpoints)
+        TRY(tlcp_policy.add_endpoint(endpoint));
+    // A running profile would ignore newly supplied network policy arguments.
+    if (!tlcp_endpoints.is_empty() && !temporary_profile)
+        return Error::from_string_literal("--tlcp-endpoint requires --temporary-profile");
 
 #if !defined(AK_OS_ANDROID)
     ProfileSelection profile_selection;
@@ -659,6 +671,8 @@ ErrorOr<void> Application::initialize(Main::Arguments const& arguments)
 
     m_request_server_options = {
         .certificates = move(certificates),
+        .tlcp_endpoints = move(tlcp_endpoints),
+        .log_transport_security = log_transport_security,
         .cache_path = profile().paths().cache,
         .http_disk_cache_mode = http_disk_cache_mode,
         .resource_substitution_map_path = resource_substitution_map_path.has_value() ? Optional<ByteString> { *resource_substitution_map_path } : OptionalNone {},

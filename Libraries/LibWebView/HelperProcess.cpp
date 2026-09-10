@@ -430,6 +430,11 @@ ErrorOr<NonnullRefPtr<Requests::RequestClient>> launch_request_server_process()
 
     if (browser_options.disable_sandbox == DisableSandbox::Yes)
         arguments.append("--disable-sandbox"sv);
+    for (auto const& endpoint : request_server_options.tlcp_endpoints)
+        arguments.append(ByteString::formatted("--tlcp-endpoint={}", endpoint));
+    if (request_server_options.log_transport_security)
+        arguments.append("--log-transport-security"sv);
+
     for (auto const& certificate : request_server_options.certificates)
         arguments.append(ByteString::formatted("--certificate={}", certificate));
 
