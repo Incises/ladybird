@@ -4,6 +4,8 @@ set(SOURCES
     Request.cpp
     RequestClient.cpp
     RequestTimingInfo.cpp
+    TLCPPolicy.cpp
+    TransportSecurityInfo.cpp
     WebSocket.cpp
 )
 
