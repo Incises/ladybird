@@ -7,3 +7,5 @@ target_include_directories(TestCookieResponses PRIVATE ${LADYBIRD_SOURCE_DIR}/Se
 
 ladybird_test(TestDiskCacheWaiters.cpp RequestServer LIBS requestserverservice)
 target_include_directories(TestDiskCacheWaiters PRIVATE ${LADYBIRD_SOURCE_DIR}/Services)
+
+ladybird_test(TestTLCPPolicy.cpp RequestServer LIBS LibRequests LibURL LibIPC LibHTTP)
