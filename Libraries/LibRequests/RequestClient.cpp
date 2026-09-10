@@ -246,6 +246,12 @@ void RequestClient::request_cached_body_file_available(u64 request_id, IPC::File
     request.value()->set_request_cached_body_file({}, response_fd, offset, size);
 }
 
+void RequestClient::transport_security_info(u64 id, ByteString kind, TransportSecurityInfo info)
+{
+    if (on_transport_security_info)
+        on_transport_security_info(id, kind, info);
+}
+
 void RequestClient::request_finished(u64 request_id, u64 total_size, RequestTimingInfo timing_info, Optional<NetworkError> network_error)
 {
     RefPtr<Request> request = m_requests.get(request_id).value_or(nullptr);

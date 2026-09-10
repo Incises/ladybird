@@ -22,6 +22,7 @@
 #include <RequestServer/Resolver.h>
 #include <RequestServer/ResourceSubstitutionMap.h>
 #include <RequestServer/Sandbox.h>
+#include <RequestServer/TransportSecurity.h>
 
 namespace RequestServer {
 
@@ -42,6 +43,8 @@ ErrorOr<int> ladybird_main(Main::Arguments arguments)
     AK::set_rich_debug_enabled(true);
 
     Vector<ByteString> certificates;
+    Vector<ByteString> tlcp_endpoints;
+    bool log_transport_security = false;
     StringView mach_server_name;
     StringView http_disk_cache_mode;
     StringView resource_map_path;
@@ -52,6 +55,8 @@ ErrorOr<int> ladybird_main(Main::Arguments arguments)
     int crash_report_fd = -1;
     Core::ArgsParser args_parser;
     args_parser.add_option(crash_report_fd, "Descriptor for anonymous crash diagnostics", "crash-report-fd", 0, "fd");
+    args_parser.add_option(tlcp_endpoints, "Require TLCP for host[:port]", "tlcp-endpoint", 0, "endpoint");
+    args_parser.add_option(log_transport_security, "Log negotiated transport security", "log-transport-security");
     args_parser.add_option(certificates, "Path to a certificate file", "certificate", 'C', "certificate");
     args_parser.add_option(mach_server_name, "Mach server name", "mach-server-name", 0, "mach_server_name");
     args_parser.add_option(http_disk_cache_mode, "HTTP disk cache mode", "http-disk-cache-mode", 0, "mode");
@@ -60,6 +65,9 @@ ErrorOr<int> ladybird_main(Main::Arguments arguments)
     args_parser.add_option(wait_for_debugger, "Wait for debugger", "wait-for-debugger");
     args_parser.add_option(disable_sandbox, "Disable process sandboxing", "disable-sandbox");
     args_parser.parse(arguments);
+    for (auto const& endpoint : tlcp_endpoints)
+        TRY(RequestServer::tlcp_policy().add_endpoint(endpoint));
+    RequestServer::set_log_transport_security(log_transport_security);
 
     if (crash_report_fd >= 0) {
         if (auto result = Core::CrashHandler::initialize(crash_report_fd); result.is_error())

@@ -512,7 +512,7 @@ void ConnectionFromClient::check_active_requests()
         // FIXME: Come up with a unified way to track websockets and standard fetches instead of this nasty tagged pointer
         if (reinterpret_cast<uintptr_t>(application_private) & websocket_private_tag) {
             auto* websocket_impl = reinterpret_cast<WebSocketImplCurl*>(reinterpret_cast<uintptr_t>(application_private) & ~websocket_private_tag);
-            if (msg->data.result == CURLE_OK) {
+            if (websocket_impl->finish_transport(msg->data.result) == CURLE_OK) {
                 if (!websocket_impl->did_connect())
                     websocket_impl->on_connection_error();
             } else {
@@ -856,6 +856,11 @@ void ConnectionFromClient::websocket_connect(u64 websocket_id, URL::URL url, Byt
                 connection_info.set_root_certificates_path(path);
 
             auto impl = WebSocketImplCurl::create(self->m_curl_multi);
+            impl->on_transport_security_info = [weak_self, websocket_id](auto const& info) {
+                log_transport_security(websocket_id, "websocket"sv, info);
+                if (auto client = weak_self.strong_ref())
+                    client->async_transport_security_info(websocket_id, "websocket"sv, info);
+            };
             auto connection = WebSocket::WebSocket::create(move(connection_info), move(impl));
 
             connection->on_open = [self = weak_self, websocket_id]() {

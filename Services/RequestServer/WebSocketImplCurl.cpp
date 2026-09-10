@@ -67,12 +67,21 @@ void WebSocketImplCurl::connect(WebSocket::ConnectionInfo const& info)
     // FIXME: Add a header function to validate the Sec-WebSocket headers that curl currently doesn't validate
 
     auto const& url = info.url();
+    if (auto result = m_transport_security.configure(m_easy_handle, url); result.is_error()) {
+        dbgln("WebSocket transport security configuration failed: {}", result.error());
+        on_connection_error();
+        return;
+    }
     set_option(CURLOPT_URL, url.to_byte_string().characters());
     set_option(CURLOPT_PORT, url.port_or_default());
     set_option(CURLOPT_CONNECTTIMEOUT, s_connect_timeout_seconds);
 
-    if (auto root_certs = info.root_certificates_path(); root_certs.has_value())
-        set_option(CURLOPT_CAINFO, root_certs->characters());
+    if (auto root_certs = info.root_certificates_path(); root_certs.has_value()) {
+        if (!set_option(CURLOPT_CAINFO, root_certs->characters())) {
+            on_connection_error();
+            return;
+        }
+    }
 
     auto const origin_header = ByteString::formatted("Origin: {}", info.origin());
     curl_slist* curl_headers = curl_slist_append(nullptr, origin_header.characters());
@@ -247,6 +256,16 @@ bool WebSocketImplCurl::flush_pending_write_buffer()
     if (m_write_notifier)
         m_write_notifier->set_enabled(false);
     return true;
+}
+
+int WebSocketImplCurl::finish_transport(int result)
+{
+    if (!m_transport_security.is_secure())
+        return result;
+    auto info = m_transport_security.finish(result);
+    if (on_transport_security_info)
+        on_transport_security_info(info);
+    return info.curl_result;
 }
 
 bool WebSocketImplCurl::did_connect()

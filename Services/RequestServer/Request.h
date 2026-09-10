@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <RequestServer/TransportSecurity.h>
+
 #include <AK/ByteBuffer.h>
 #include <AK/ByteString.h>
 #include <AK/MemoryStream.h>
@@ -235,6 +237,7 @@ private:
     HTTP::CacheMode m_cache_mode { HTTP::CacheMode::Default };
     ConnectionFromClient* m_client { nullptr };
 
+    TransportSecurity m_transport_security;
     void* m_curl_multi_handle { nullptr };
     void* m_curl_easy_handle { nullptr };
     bool m_curl_easy_handle_is_in_multi { false };

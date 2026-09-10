@@ -3,12 +3,14 @@
 #include <LibRequests/NetworkError.h>
 #include <LibRequests/CameFromCache.h>
 #include <LibRequests/RequestTimingInfo.h>
+#include <LibRequests/TransportSecurityInfo.h>
 #include <LibURL/URL.h>
 #include <RequestServer/IsPrivate.h>
 #include <RequestServer/RequestType.h>
 
 endpoint RequestClient
 {
+    transport_security_info(u64 connection_id, ByteString kind, Requests::TransportSecurityInfo info) =|
     request_requires_network(u64 request_id) =|
     request_started(u64 request_id, IPC::File fd) =|
     request_body_file_available(u64 request_id, IPC::File fd, u64 offset, u64 size) =|

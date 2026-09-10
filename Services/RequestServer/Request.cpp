@@ -616,6 +616,13 @@ static constexpr size_t max_aia_fetches_per_request = 5;
 void Request::notify_fetch_complete(Badge<ConnectionFromClient>, int result_code)
 {
     mark_lifecycle_event(this, &WireStats::complete_observed_at);
+    if (m_transport_security.is_secure()) {
+        auto info = m_transport_security.finish(result_code);
+        result_code = info.curl_result;
+        auto kind = m_type == RequestType::Connect ? "preconnect"sv : "request"sv;
+        log_transport_security(m_request_id, kind, info);
+        m_client->async_transport_security_info(m_request_id, kind, info);
+    }
 
     if (m_type == RequestType::Fetch || m_type == RequestType::BackgroundRevalidation) {
         log_network_activity(m_url, m_method, m_curl_easy_handle, result_code, is_revalidation_request(), m_type);
@@ -784,6 +791,15 @@ void Request::handle_initial_state()
     if (g_resource_substitution_map) {
         if (g_resource_substitution_map->lookup(m_url).has_value()) {
             transition_to_state(State::ServeSubstitution);
+            return;
+        }
+    }
+
+    // Cache entries do not record the transport used to fetch them. Never satisfy a TLCP requirement from an old TLS entry.
+    if (tlcp_policy().requires_tlcp(m_url)) {
+        m_disk_cache.clear();
+        if (is_cache_only_request()) {
+            transition_to_state(State::FailedCacheOnly);
             return;
         }
     }
@@ -1105,6 +1121,13 @@ void Request::handle_connect_state()
             dbgln("Request::handle_connect_state: Failed to set curl option: {}", curl_easy_strerror(result));
     };
 
+    if (auto result = m_transport_security.configure(m_curl_easy_handle, m_url); result.is_error()) {
+        dbgln("Transport security configuration failed: {}", result.error());
+        m_network_error = Requests::NetworkError::Unknown;
+        transition_to_state(State::Error);
+        return;
+    }
+
     set_option(CURLOPT_PRIVATE, this);
 
     set_option(CURLOPT_NOSIGNAL, 1L);
@@ -1155,12 +1178,16 @@ void Request::handle_fetch_state()
             dbgln("Request::handle_start_fetch_state: Failed to set curl option: {}", curl_easy_strerror(result));
     };
 
+    if (auto result = m_transport_security.configure(m_curl_easy_handle, m_url); result.is_error()) {
+        dbgln("Transport security configuration failed: {}", result.error());
+        m_network_error = Requests::NetworkError::Unknown;
+        transition_to_state(State::Error);
+        return;
+    }
+
     set_option(CURLOPT_PRIVATE, this);
 
     set_option(CURLOPT_NOSIGNAL, 1L);
-
-    if (auto const& path = default_certificate_path(); !path.is_empty())
-        set_option(CURLOPT_CAINFO, path.characters());
 
     set_option(CURLOPT_SSL_CTX_FUNCTION, configure_ssl_context);
 #ifndef AK_OS_MACOS

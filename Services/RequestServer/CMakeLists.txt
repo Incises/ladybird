@@ -6,6 +6,7 @@ set(SOURCES
     RequestPipe.cpp
     Resolver.cpp
     ResourceSubstitutionMap.cpp
+    TransportSecurity.cpp
     WebSocketImplCurl.cpp
 )
 

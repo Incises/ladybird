@@ -71,10 +71,12 @@ public:
 
     Function<String(URL::URL const&, RequestServer::IsPrivate)> on_retrieve_http_cookie;
     Function<void()> on_request_server_died;
+    Function<void(u64, ByteString const&, TransportSecurityInfo const&)> on_transport_security_info;
 
 private:
     virtual void die() override;
 
+    virtual void transport_security_info(u64, ByteString, TransportSecurityInfo) override;
     virtual void request_requires_network(u64 request_id) override;
     virtual void request_started(u64 request_id, IPC::File) override;
     virtual void request_body_file_available(u64 request_id, IPC::File, u64 offset, u64 size) override;

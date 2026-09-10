@@ -9,6 +9,7 @@
 #include <AK/MemoryStream.h>
 #include <LibCore/Forward.h>
 #include <LibWebSocket/Impl/WebSocketImpl.h>
+#include <RequestServer/TransportSecurity.h>
 
 typedef void CURL;
 typedef void CURLM;
@@ -33,6 +34,8 @@ public:
     virtual bool handshake_complete_when_connected() const override { return true; }
 
     bool did_connect();
+    int finish_transport(int result);
+    Function<void(Requests::TransportSecurityInfo const&)> on_transport_security_info;
 
 private:
     explicit WebSocketImplCurl(CURLM*);
@@ -40,6 +43,7 @@ private:
     void read_from_socket();
     bool flush_pending_write_buffer();
 
+    TransportSecurity m_transport_security;
     CURLM* m_multi_handle { nullptr };
     CURL* m_easy_handle { nullptr };
     RefPtr<Core::Notifier> m_read_notifier;
